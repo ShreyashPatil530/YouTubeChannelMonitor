@@ -1,0 +1,74 @@
+.dark-mode {
+    background-color: #121212;
+    color: #ffffff;
+}
+
+.dark-mode .card {
+    background-color: #1e1e1e;
+    color: #ffffff;
+    border-color: #333;
+}
+
+.dark-mode .list-group-item {
+    background-color: #1e1e1e;
+    color: #ffffff;
+    border-color: #333;
+}
+
+.dark-mode .text-muted {
+    color: #aaa !important;
+}
+
+.dark-mode .navbar-dark {
+    background-color: #1a1a1a !important;
+}
+
+body {
+    transition: background-color 0.3s, color 0.3s;
+}
+
+.card {
+    transition: background-color 0.3s, color 0.3s, border-color 0.3s;
+}
+
+
+
+.dark-mode {
+    background-color: #121212;
+    color: #ffffff;
+}
+
+.dark-mode .card {
+    background-color: #1e1e1e;
+    color: #ffffff;
+    border-color: #333;
+}
+
+.dark-mode .list-group-item {
+    background-color: #1e1e1e;
+    color: #ffffff;
+    border-color: #333;
+}
+
+.dark-mode .text-muted {
+    color: #aaa !important;
+}
+
+.dark-mode .navbar-dark {
+    background-color: #1a1a1a !important;
+}
+
+body {
+    transition: background-color 0.3s, color 0.3s;
+}
+
+.card {
+    transition: background-color 0.3s, color 0.3s, border-color 0.3s;
+}
+
+/* Chart container styles */
+.chart-container {
+    position: relative;
+    height: 250px;
+    width: 100%;
+}

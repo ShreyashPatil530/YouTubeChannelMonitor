@@ -1,0 +1,295 @@
+{% extends "base.html" %}
+
+{% block content %}
+<div class="row">
+    <div class="col-md-4">
+        <div class="card mb-4">
+            {% if channel.banner_url %}
+            <img src="{{ channel.banner_url }}" class="card-img-top" alt="Channel banner" style="height: 150px; object-fit: cover;">
+            {% endif %}
+            <div class="card-body text-center">
+                <img src="{{ channel.thumbnail_url }}" class="rounded-circle mb-3" width="100" height="100" alt="Channel logo" onerror="this.src='https://via.placeholder.com/100'">
+                <h3>{{ channel.name }}</h3>
+                <p class="text-muted">{{ channel.description[:100] }}{% if channel.description|length > 100 %}...{% endif %}</p>
+            </div>
+            <ul class="list-group list-group-flush">
+                <li class="list-group-item d-flex justify-content-between align-items-center">
+                    Subscribers
+                    <span class="badge bg-primary rounded-pill">{{ "{:,}".format(channel.subscriber_count) }}</span>
+                </li>
+                <li class="list-group-item d-flex justify-content-between align-items-center">
+                    Total Views
+                    <span class="badge bg-primary rounded-pill">{{ "{:,}".format(channel.view_count) }}</span>
+                </li>
+                <li class="list-group-item d-flex justify-content-between align-items-center">
+                    Videos
+                    <span class="badge bg-primary rounded-pill">{{ "{:,}".format(channel.video_count) }}</span>
+                </li>
+            </ul>
+        </div>
+    </div>
+
+    <div class="col-md-8">
+        <div class="row">
+            <div class="col-md-6">
+                <div class="card mb-4">
+                    <div class="card-header">
+                        <h5>Subscriber Prediction (Next 7 Days)</h5>
+                    </div>
+                    <div class="card-body">
+                        <canvas id="subscriberChart" height="250"></canvas>
+                    </div>
+                </div>
+            </div>
+            <div class="col-md-6">
+                <div class="card mb-4">
+                    <div class="card-header">
+                        <h5>Comment Sentiment Analysis</h5>
+                    </div>
+                    <div class="card-body">
+                        <canvas id="sentimentChart" height="250"></canvas>
+                    </div>
+                </div>
+            </div>
+        </div>
+
+        <div class="card mb-4">
+            <div class="card-header">
+                <h5>Recent Videos Performance</h5>
+            </div>
+            <div class="card-body">
+                <canvas id="videoChart" height="300"></canvas>
+            </div>
+        </div>
+
+        <div class="card">
+            <div class="card-header">
+                <h5>Latest Videos</h5>
+            </div>
+            <div class="card-body">
+                <div class="list-group">
+                    {% for video in videos %}
+                    <div class="list-group-item">
+                        <div class="d-flex w-100 justify-content-between">
+                            <h6 class="mb-1">{{ video.title }}</h6>
+                            <small>{{ video.published_at }}</small>
+                        </div>
+                        <div class="d-flex justify-content-between mt-2">
+                            <small class="text-muted">Views: {{ "{:,}".format(video.view_count) }}</small>
+                            <small class="text-muted">Likes: {{ "{:,}".format(video.like_count) }}</small>
+                            <small class="text-muted">Comments: {{ "{:,}".format(video.comment_count) }}</small>
+                        </div>
+                    </div>
+                    {% else %}
+                    <div class="list-group-item">
+                        <p class="text-muted">No videos found for this channel.</p>
+                    </div>
+                    {% endfor %}
+                </div>
+            </div>
+        </div>
+    </div>
+</div>
+
+<script src="https://cdn.jsdelivr.net/npm/chart.js"></script>
+<script>
+    // Pass data to JavaScript for charts
+    const predictions = {{ predictions | tojson | safe }};
+    const sentimentStats = {{ sentiment_stats | tojson | safe }};
+    const videos = {{ videos | tojson | safe }};
+    const channelId = "{{ channel.id }}";
+    
+    // Render charts after page loads
+    document.addEventListener('DOMContentLoaded', function() {
+        renderSubscriberChart();
+        renderSentimentChart();
+        renderVideoChart();
+    });
+    
+    function renderSubscriberChart() {
+        const ctx = document.getElementById('subscriberChart');
+        if (!ctx) return;
+        
+        if (predictions && predictions.length > 0) {
+            const labels = predictions.map(p => p[0]);
+            const data = predictions.map(p => p[1]);
+            
+            new Chart(ctx, {
+                type: 'line',
+                data: {
+                    labels: labels,
+                    datasets: [{
+                        label: 'Predicted Subscribers',
+                        data: data,
+                        borderColor: 'rgb(75, 192, 192)',
+                        backgroundColor: 'rgba(75, 192, 192, 0.2)',
+                        tension: 0.1,
+                        fill: true
+                    }]
+                },
+                options: {
+                    responsive: true,
+                    maintainAspectRatio: false,
+                    plugins: {
+                        title: {
+                            display: true,
+                            text: '7-Day Subscriber Prediction'
+                        },
+                        tooltip: {
+                            callbacks: {
+                                label: function(context) {
+                                    return `Subscribers: ${context.raw.toLocaleString()}`;
+                                }
+                            }
+                        }
+                    },
+                    scales: {
+                        y: {
+                            beginAtZero: false,
+                            ticks: {
+                                callback: function(value) {
+                                    return value.toLocaleString();
+                                }
+                            }
+                        }
+                    }
+                }
+            });
+        } else {
+            ctx.innerHTML = '<p class="text-center text-muted p-4">Not enough data for prediction</p>';
+        }
+    }
+    
+    function renderSentimentChart() {
+        const ctx = document.getElementById('sentimentChart');
+        if (!ctx) return;
+        
+        const data = [
+            sentimentStats.positive || 0,
+            sentimentStats.neutral || 0,
+            sentimentStats.negative || 0
+        ];
+        
+        const total = data.reduce((a, b) => a + b, 0);
+        
+        if (total > 0) {
+            new Chart(ctx, {
+                type: 'pie',
+                data: {
+                    labels: ['Positive', 'Neutral', 'Negative'],
+                    datasets: [{
+                        data: data,
+                        backgroundColor: [
+                            'rgba(75, 192, 192, 0.7)',
+                            'rgba(255, 206, 86, 0.7)',
+                            'rgba(255, 99, 132, 0.7)'
+                        ],
+                        borderColor: [
+                            'rgba(75, 192, 192, 1)',
+                            'rgba(255, 206, 86, 1)',
+                            'rgba(255, 99, 132, 1)'
+                        ],
+                        borderWidth: 1
+                    }]
+                },
+                options: {
+                    responsive: true,
+                    maintainAspectRatio: false,
+                    plugins: {
+                        legend: {
+                            position: 'top',
+                        },
+                        title: {
+                            display: true,
+                            text: 'Comment Sentiment Distribution'
+                        },
+                        tooltip: {
+                            callbacks: {
+                                label: function(context) {
+                                    const label = context.label || '';
+                                    const value = context.raw || 0;
+                                    const percentage = Math.round((value / total) * 100);
+                                    return `${label}: ${value} (${percentage}%)`;
+                                }
+                            }
+                        }
+                    }
+                }
+            });
+        } else {
+            ctx.innerHTML = '<p class="text-center text-muted p-4">No sentiment data available</p>';
+        }
+    }
+    
+    function renderVideoChart() {
+        const ctx = document.getElementById('videoChart');
+        if (!ctx) return;
+        
+        if (videos && videos.length > 0) {
+            const labels = videos.map(v => v.title.length > 20 ? v.title.substring(0, 20) + '...' : v.title);
+            const views = videos.map(v => v.view_count);
+            const likes = videos.map(v => v.like_count);
+            const comments = videos.map(v => v.comment_count);
+            
+            new Chart(ctx, {
+                type: 'bar',
+                data: {
+                    labels: labels,
+                    datasets: [
+                        {
+                            label: 'Views',
+                            data: views,
+                            backgroundColor: 'rgba(54, 162, 235, 0.7)',
+                            borderColor: 'rgba(54, 162, 235, 1)',
+                            borderWidth: 1
+                        },
+                        {
+                            label: 'Likes',
+                            data: likes,
+                            backgroundColor: 'rgba(75, 192, 192, 0.7)',
+                            borderColor: 'rgba(75, 192, 192, 1)',
+                            borderWidth: 1
+                        },
+                        {
+                            label: 'Comments',
+                            data: comments,
+                            backgroundColor: 'rgba(255, 159, 64, 0.7)',
+                            borderColor: 'rgba(255, 159, 64, 1)',
+                            borderWidth: 1
+                        }
+                    ]
+                },
+                options: {
+                    responsive: true,
+                    maintainAspectRatio: false,
+                    plugins: {
+                        title: {
+                            display: true,
+                            text: 'Video Performance Metrics'
+                        },
+                        tooltip: {
+                            callbacks: {
+                                label: function(context) {
+                                    return `${context.dataset.label}: ${context.raw.toLocaleString()}`;
+                                }
+                            }
+                        }
+                    },
+                    scales: {
+                        y: {
+                            beginAtZero: true,
+                            ticks: {
+                                callback: function(value) {
+                                    return value.toLocaleString();
+                                }
+                            }
+                        }
+                    }
+                }
+            });
+        } else {
+            ctx.innerHTML = '<p class="text-center text-muted p-4">No video data available</p>';
+        }
+    }
+</script>
+{% endblock %}

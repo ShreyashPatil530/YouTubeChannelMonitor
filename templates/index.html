@@ -1,0 +1,24 @@
+{% extends "base.html" %}
+
+{% block content %}
+<div class="row justify-content-center">
+    <div class="col-md-6">
+        <div class="card">
+            <div class="card-header">
+                <h3 class="text-center">YouTube Channel Monitor</h3>
+            </div>
+            <div class="card-body">
+                <form method="POST" action="{{ url_for('dashboard') }}">
+                    <div class="mb-3">
+                        <label for="channel_id" class="form-label">Enter YouTube Channel ID or Username</label>
+                        <input type="text" class="form-control" id="channel_id" name="channel_id" 
+                               placeholder="e.g., UC_x5XG1OV2P6uZZ5FSM9Ttw or YouTube" required>
+                        <div class="form-text">Find channel ID in the URL of your channel's homepage</div>
+                    </div>
+                    <button type="submit" class="btn btn-primary w-100">Analyze Channel</button>
+                </form>
+            </div>
+        </div>
+    </div>
+</div>
+{% endblock %}
